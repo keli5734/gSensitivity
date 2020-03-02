@@ -1,0 +1,357 @@
+%% Sensitivity anlaysis of the two curves against beta in differernt g
+
+
+%% M1-M-M2
+clear
+clc
+
+%% Parameters 
+%
+k1 = 0.5; %.5 
+k2 = 0.5;  
+k_m1 = 24/72;%24/72;
+k_m2 = 24/72;%24/72;
+delta = .02; % .02
+s1 = 1; %1
+s2 = 1;
+%g = .2;
+epsilon = 0;
+
+%% time setting 
+
+t0 = 0;
+t_end = 1000;
+report_point = (t_end - t0) * 24 + 1;
+report_time = linspace(t0,t_end,report_point);
+len = length(report_time);
+
+%% Variables 
+
+M = zeros(1,len);
+M1 = zeros(1,len);
+M2 = zeros(1,len);
+
+M1_1 = zeros(1,len);
+M1_2 = zeros(1,len);
+M1_3 = zeros(1,len);
+
+
+
+M0 = 1e+6; % 1e+6
+M10 = 0;
+M20 = 0;
+
+M1_10 = 0;
+M1_20 = 0;
+M1_30 = 0;
+
+M(1) = M0;
+M1(1) = M10;
+M2(1) = M20;
+M1_1(1) = M1_10;
+M1_2(1) = M1_20;
+M1_3(1) = M1_30;
+
+init = [M0,M10,M20,M1_10,M1_20,M1_30]';
+
+options = odeset('RelTol',1e-10,'AbsTol',1e-20);
+
+
+%%        
+g = 0:.02:2.5;
+g_length = length(g);
+vectors = zeros(g_length,4);
+
+for i = 1:g_length
+            
+[~,y2] = ode15s(@fun_NonInf_SepM, report_time, init, options,...
+                k1,k2,k_m1,k_m2,delta,s1,s2,M0,g(i),epsilon); 
+            
+            
+
+            
+%{        
+        
+       vectors(i,1) = g(i);
+       vectors(i,2) = y2(end,1);
+       vectors(i,3) = y2(end,2);
+       vectors(i,4) = y2(end,3);
+  
+end
+
+plot(g, vectors(:,2),'k-','LineWidth',2)
+hold on
+plot(g, vectors(:,3),'k-.','LineWidth',1)
+plot(g, vectors(:,4),'k--','LineWidth',1)
+xlabel('g')
+ylabel('Number of macrophages at equilibrium')
+%ylim([0,max(ylim)])
+legend('M','M1','M2')
+set(gca,'FontSize',20)
+%}
+
+           
+           
+            
+%% Immunomodulators 
+epsilon = 0;
+lambda = log(2) / (.5 - 0); % 
+
+t_im_0 = 0;
+t_im_end = 15;
+report_point_im = (t_im_end - t_im_0) * 24 + 1;
+report_time_im = linspace(t_im_0,t_im_end, report_point_im);
+len_im = length(report_time_im);
+
+%%
+M_im = zeros(1,len_im);
+M1_im = zeros(1,len_im);
+M2_im = zeros(1,len_im);
+Eff = zeros(1,len);
+
+
+M_im0 = y2(end,1);
+M1_im0 = y2(end,2);
+M2_im0 = y2(end,3);
+Eff_0 = 1;
+
+M_im(1) = M_im0;
+M1_im(1) = M1_im0;
+M2_im(1) = M2_im0;
+Eff(1) = Eff_0;
+
+init_im = [M_im0, M1_im0, M2_im0,Eff_0]';
+
+%%
+[~,y_im] = ode15s(@fun, report_time_im, init_im, options,...
+                k1,k2,k_m1,k_m2,delta,s1,s2,M0,g(i),epsilon,lambda);
+            
+            
+            
+
+
+%% Viral parameters 
+
+beta = 3.8e-5; %3.8e-5 (benchmark) %2.244e-5 R0 = 1.
+
+delta_I = 3.6;
+p = 7.1e-2; % 5e-2, 11e-2, 15e-2
+c = 20;  %%change to 20 Cao et al
+kappa = 24 * 3.2e-5;%24 * 3.2e-5;
+q1 = 1e-6; %1e-6;  % cells 
+q2 = 1e-6; %1e-6; % virus
+
+kappa_a = .2; %.2
+mu =  1e-6; %1e-6; %2.5e-6;
+rho = 1; %1
+%epsilon = 0;
+
+%beta = beta .* (c + kappa * y_im(end,2) + kappa_a * 0) ./ (c + 24 * 3.2e-5 * y_im(end,2) + kappa_a * 0);
+
+
+%% time setting 
+
+t0_inf = 0;
+t_end_inf = 15;
+report_point_inf = (t_end_inf - t0_inf) * 24 + 1;
+report_time_inf = linspace(t0_inf, t_end_inf, report_point_inf);
+len_inf = length(report_time_inf);
+
+%% Viral Variables 
+
+
+M_inf = zeros(1,len_inf);
+M1_inf = zeros(1,len_inf);
+M2_inf = zeros(1,len_inf);
+T = zeros(1,len_inf);
+I = zeros(1,len_inf);
+V = zeros(1,len_inf);
+A = zeros(1,len_inf);
+M1_inf_1 = zeros(1,len_inf);
+M1_inf_2 = zeros(1,len_inf);
+M1_inf_3 = zeros(1,len_inf);
+Eff_inf = zeros(1,len);
+s = zeros(1,len);
+
+
+M_inf0 = y_im(end,1);  % y_im(end,1)
+M1_inf0 = y_im(end,2); % y_im(end,2)
+M2_inf0 = y_im(end,3); % y_im(end,3)
+
+
+T0 = 4e+8;
+I0 = 0;
+V0 = 3.3e-1; %3.3e-1; % 3.3e-1
+A0 = 0;
+M1_inf_10 = y_im(end,2);
+M1_inf_20 = 0;
+M1_inf_30 = 0;
+Eff_inf0 = y_im(end,4);
+
+
+
+M_inf(1) = M_inf0;
+M1_inf(1) = M1_inf0;
+M2_inf(1) = M2_inf0;
+T(1) = T0;
+I(1) = I0;
+V(1) = V0;
+A(1) = A0;
+M1_inf_1(1) = M1_inf_10;
+M1_inf_2(1) = M1_inf_20;
+M1_inf_3(1) = M1_inf_30;
+Eff_inf(1) = Eff_inf0;
+
+
+init_inf = [M_inf0,M1_inf0,M2_inf0,T0,I0,V0,A0,M1_inf_10,M1_inf_20,M1_inf_30,Eff_inf0]';
+
+
+%% sensitivity to viral infectivity 'Beta'
+
+% This section gives for different values of beta, the AUC of each part of
+% macrophages chnages. 
+% beta setting 
+beta  = 8e-6 : .5e-6 : 1.2e-4; %MBeta = 6.08e-5; %HBeta = 1.068e-4
+%beta = linspace(3.8e-5,10e-5,20);
+p = 7.1e-2;
+%kappa = 7.7e-4;
+%beta = 1.068e-4;
+len_beta = length(beta);
+plot_var = zeros(len_beta,2);
+T_var= zeros(len_beta,1);
+
+%{
+q1 = 5e-8:1e-7:8e-6;
+len_q1 = length(q1);
+plot_var = zeros(len_q1, 6);
+T_var= zeros(len_q1,1);
+
+
+for j = 1:len_q1
+%}
+ for j = 1:len_beta
+        [~,y_inf_beta] = ode15s(@fun_inf_lambda, report_time_inf, init_inf, options,...
+                        k1,k2,k_m1,k_m2,delta,s1,s2,M0,g(i),...
+                        beta(j),delta_I,p,c,kappa,q1,q2,...            %beta(j) ---> beta
+                        kappa_a,mu,rho,epsilon,lambda);
+         % Overall AUC           
+         plot_var(j,1) = trapz(y_inf_beta(:,6)); % Virus
+         plot_var(j,2) = trapz(y_inf_beta(:,2)); % Macrophages M1
+         %plot_var(j,7) = trapz(y_inf_beta(:,3)); % Macropahges M2 
+         %plot_var(j,3) = trapz(y_inf_beta(:,5)); % infected cells
+         %plot_var(j,8) = trapz(y_inf_beta(:,1)); % unactivated M 
+         
+         
+         % Components AUC of Macrophages 
+         %plot_var(j,4) = trapz(y_inf_beta(:,8)); % M1 convert from M
+         %plot_var(j,5) = trapz(y_inf_beta(:,9)); % M1 activated by ifnected cells
+         %plot_var(j,6) = trapz(y_inf_beta(:,10)); % M1 activated by virions
+        
+         % Depletion of Target Cells 
+         %T_var(j) = y_inf_beta(end,4);
+         
+        
+         %{
+         figure(j)
+         yyaxis left 
+         semilogy(report_time_inf, y_inf_beta(:,6),'LineWidth',2)
+         %ylabel('Viral load (fold change)')
+         yyaxis right 
+         plot(report_time_inf, y_inf_beta(:,2),'r','LineWidth',2)
+         %ylabel('Number of macrophages (cells)')
+         hold on
+         plot(report_time_inf, y_inf_beta(:,3),'r-.','LineWidth',2)  
+         hold off
+         xlabel('Time (days)')
+         %title('Virus-Macrophages Interaction')
+         legend('V','M1','M2','FontSize',14)
+         set(gca, 'FontSize',20)
+         %}
+        
+
+ end
+ 
+%% 
+
+[maxY_beta, indexOfMaxY_beta] = max(plot_var(:,2));
+xAtMax_beta = beta(indexOfMaxY_beta);
+         
+%% Calculation correlation
+cor_len = 5;
+cor_vec = zeros(len_beta - cor_len, 1);
+
+%AUC_Time = [beta_max_time2(:,3)', beta_max_time3(:,3)'];
+%AUC_Max = [beta_max_time2(:,2)', beta_max_time3(:,2)'];
+%AUC_M1 = [beta_max_time2(:,4)', beta_max_time3(:,4)'];
+
+    for ii = 1:len_beta - cor_len
+    
+    cor_max = corrcoef(plot_var(ii:(cor_len+ii-1),2), plot_var(ii:(cor_len+ii-1),1));
+    %cor_max = corrcoef(AUC_M1(ii:(cor_len+ii-1)), AUC_Time(ii:(cor_len+ii-1)));
+    cor_vec(ii) = cor_max(2);
+    end
+
+%%
+cor_vec = round(cor_vec,4);
+
+cor_vec1 = [];
+for jj = 1:length(cor_vec)
+    if cor_vec(jj) == 1
+        cor_vec1(jj) = cor_vec(jj);
+    end 
+end 
+cor_vec1 = cor_vec1(cor_vec1 ~= 0);
+len_corvec1 = length(cor_vec1);
+
+cor_vec2 = [];
+for jj = 1:length(cor_vec)
+    if (cor_vec(jj) < 1) && (cor_vec(jj) > 0)
+        cor_vec2(jj) = cor_vec(jj);
+    end 
+end 
+cor_vec2 = cor_vec2(cor_vec2 ~= 0);
+
+cor_vec3 = [];
+for jj = 1:length(cor_vec)
+    if (cor_vec(jj) < 0)
+        cor_vec3(jj) = cor_vec(jj);
+    end 
+end 
+cor_vec3 = cor_vec3(cor_vec3 ~= 0);
+
+            
+%%
+
+beta1(i) = delta_I * (c + kappa * y_im(end,2)) / (p * T0);
+beta3(i) = xAtMax_beta;
+if isempty(cor_vec1) == 1
+    beta2(i) = beta3(i);
+else
+    beta2(i) = beta(len_corvec1);
+end 
+
+end
+
+%%
+writematrix(beta1,'gBeta1.xls')
+writematrix(beta2,'gBeta2.xls')
+writematrix(beta3,'gBeta3.xls')
+
+%%
+beta1 = readmatrix('gBeta1.xls');
+beta2 = readmatrix('gBeta2.xls');
+beta3 = readmatrix('gBeta3.xls');
+
+
+%%
+
+area(g,max(beta)*ones(1,g_length),'FaceAlpha',.7,'FaceColor',[0.93,0.69,0.13],'EdgeColor','None')
+hold on
+area(g,beta3,'FaceAlpha',.8,'FaceColor',[0.81,0.37,0.90],'EdgeColor','None') 
+area(g,beta2,'FaceAlpha',.8,'FaceColor',[0.17,0.73,0.96],'EdgeColor','None') 
+area(g,beta1,'FaceAlpha',1,'FaceColor',[0.5 0.5 0.5],'EdgeColor','None') 
+ylim([0,max(beta)])
+ylabel('\beta')
+xlabel('g')
+set(gca,'FontSize',18)
+
